@@ -1,0 +1,73 @@
+
+variables:
+    BACKEND_IMAGE_GITLAB: git.cognito.cz:5000/gauss/ga-2502-elasticsearch-plugins
+
+stages:
+  - build
+  - test
+  - build_uber
+  - build_docker
+  - deploy
+
+before_script:
+#  - echo `pwd` # debug
+  - '[ "$CI_BUILD_TAG" ] && export RELEASE_TAG=$(echo $CI_BUILD_TAG | sed "s/^v//") || RELEASE_TAG=live'
+  - export GRADLE_USER_HOME=`pwd`/.gradle
+
+cache:
+  paths:
+    - .gradle/wrapper
+    - .gradle/caches
+
+build:
+  image: java:8-jdk
+  stage: build
+  script:
+    - ./gradlew assemble
+  artifacts:
+    paths:
+      - build/libs/*.jar
+
+unit_test:
+  image: java:8-jdk
+  stage: test
+  script:
+    - ./gradlew check
+
+build_uber:
+  only:
+      - tags
+  image: java:8-jdk
+  stage: build_uber
+  script:
+      - ./gradlew shadowJar
+  artifacts:
+    paths:
+        - build/libs/*.jar
+    expire_in: 1 week
+
+
+build_docker_images:
+    only:
+        - tags
+    image: docker:latest
+    stage: build_docker
+    script:
+        - docker login -u gitlab-ci-token -p $CI_BUILD_TOKEN git.cognito.cz:5000
+        - docker info
+        - (cd docker && ./rebuild.sh -t "$RELEASE_TAG" -T "$CI_BUILD_REF")
+    dependencies:
+        - build_uber
+
+
+push_docker_images:
+    only:
+        - tags
+    image: docker:latest
+    stage: deploy
+    script:
+        - docker login -u gitlab-ci-token -p $CI_BUILD_TOKEN git.cognito.cz:5000
+        - docker push "${BACKEND_IMAGE_GITLAB}:${CI_BUILD_REF}"
+        - docker push "${BACKEND_IMAGE_GITLAB}:${RELEASE_TAG}"
+    dependencies: []
+
