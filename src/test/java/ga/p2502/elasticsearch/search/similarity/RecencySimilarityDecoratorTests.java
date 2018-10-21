@@ -1,12 +1,9 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,272 +11,98 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package ga.p2502.elasticsearch.search.similarity;
 
-import java.util.ArrayList;
-import java.util.List;
-
+import ga.p2502.elasticsearch.index.analysis.RecencyPayloadAnalyzerFactory;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.IndexOptions;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.similarities.BM25Similarity;
-import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
-import org.apache.lucene.search.spans.SpanOrQuery;
-import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
 
-/**
- * Tests against all decorated TF-IDF based similarities. Copied from Lucene source codes.
- * see org.apache.lucene.search.similarities.TestSimilarity2
- */
 public class RecencySimilarityDecoratorTests extends LuceneTestCase {
-    List<RecencySimilarityDecorator> sims;
+    private Similarity decoratedSimilarity;
+    private Similarity recencySimilarityDecorator;
+    private Directory directory;
+    private IndexReader indexReader;
+    private IndexSearcher indexSearcher;
+
 
     @Override
     public void setUp() throws Exception {
         super.setUp();
-        sims = new ArrayList<>();
-        sims.add(new RecencySimilarityDecorator(null, new ClassicSimilarity()));
-        sims.add(new RecencySimilarityDecorator(null, new BM25Similarity()));
+        this.decoratedSimilarity = new BM25Similarity();
+        this.recencySimilarityDecorator = new RecencySimilarityDecorator(null, decoratedSimilarity);
+
+        directory = newDirectory();
+        try (IndexWriter indexWriter = new IndexWriter(directory, newIndexWriterConfig(RecencyPayloadAnalyzerFactory.create()))) {
+            Document document = new Document();
+            document.add(new TextFieldWithPayload("web_kw", "auto motto", Field.Store.YES));
+            document.add(new TextFieldWithPayload("web_kw",
+                    "java|" + createTermRecencyPayload(1)
+                            + " python|"+ createTermRecencyPayload(24) , Field.Store.YES));
+
+
+            indexWriter.addDocument(document);
+            indexWriter.commit();
+        }
+        indexReader = DirectoryReader.open(directory);
+        indexSearcher = newSearcher(indexReader);
     }
 
-    /** because of stupid things like querynorm, it's possible we computeStats on a field that doesnt exist at all
-     *  test this against a totally empty index, to make sure sims handle it
-     */
-    public void testEmptyIndex() throws Exception {
-        Directory dir = newDirectory();
-        RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
-        IndexReader ir = iw.getReader();
-        iw.close();
-        IndexSearcher is = newSearcher(ir);
-
-        for (Similarity sim : sims) {
-            is.setSimilarity(sim);
-            assertEquals(0, is.search(new TermQuery(new Term("foo", "bar")), 10).totalHits);
-        }
-        ir.close();
-        dir.close();
+    @Override
+    public void tearDown() throws Exception {
+        IOUtils.close(indexReader, directory);
+        super.tearDown();
     }
 
-    /** similar to the above, but ORs the query with a real field */
-    public void testEmptyField() throws Exception {
-        Directory dir = newDirectory();
-        RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
-        Document doc = new Document();
-        doc.add(newTextField("foo", "bar", Field.Store.NO));
-        iw.addDocument(doc);
-        IndexReader ir = iw.getReader();
-        iw.close();
-        IndexSearcher is = newSearcher(ir);
+    public void testWhenPayloadNotExistsReturnsTheSameScoreAsDecoratedSimilarity() throws Exception {
+        BooleanQuery.Builder query = new BooleanQuery.Builder();
+        query.add(new TermQuery(new Term("web_kw", "auto")), BooleanClause.Occur.SHOULD);
+        query.add(new TermQuery(new Term("web_kw", "motto")), BooleanClause.Occur.SHOULD);
 
-        for (Similarity sim : sims) {
-            is.setSimilarity(sim);
-            BooleanQuery.Builder query = new BooleanQuery.Builder();
-            query.setDisableCoord(true);
-            query.add(new TermQuery(new Term("foo", "bar")), BooleanClause.Occur.SHOULD);
-            query.add(new TermQuery(new Term("bar", "baz")), BooleanClause.Occur.SHOULD);
-            assertEquals(1, is.search(query.build(), 10).totalHits);
-        }
-        ir.close();
-        dir.close();
+        indexSearcher.setSimilarity(decoratedSimilarity);
+        TopDocs results1 = indexSearcher.search(query.build(), 10);
+
+        indexSearcher.setSimilarity(recencySimilarityDecorator);
+        TopDocs results2 = indexSearcher.search(query.build(), 10);
+
+        assertEquals(results1.scoreDocs[0].score, results2.scoreDocs[0].score, 0);
     }
 
-    /** similar to the above, however the field exists, but we query with a term that doesnt exist too */
-    public void testEmptyTerm() throws Exception {
-        Directory dir = newDirectory();
-        RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
-        Document doc = new Document();
-        doc.add(newTextField("foo", "bar", Field.Store.NO));
-        iw.addDocument(doc);
-        IndexReader ir = iw.getReader();
-        iw.close();
-        IndexSearcher is = newSearcher(ir);
+    public void testRecencyBoosting() throws Exception {
+        BooleanQuery.Builder query = new BooleanQuery.Builder();
+        query.add(new TermQuery(new Term("web_kw", "python")), BooleanClause.Occur.SHOULD);
+        query.add(new TermQuery(new Term("web_kw", "java")), BooleanClause.Occur.SHOULD);
 
-        for (Similarity sim : sims) {
-            is.setSimilarity(sim);
-            BooleanQuery.Builder query = new BooleanQuery.Builder();
-            query.setDisableCoord(true);
-            query.add(new TermQuery(new Term("foo", "bar")), BooleanClause.Occur.SHOULD);
-            query.add(new TermQuery(new Term("foo", "baz")), BooleanClause.Occur.SHOULD);
-            assertEquals(1, is.search(query.build(), 10).totalHits);
-        }
-        ir.close();
-        dir.close();
+        indexSearcher.setSimilarity(decoratedSimilarity);
+        TopDocs results1 = indexSearcher.search(query.build(), 10);
+
+        indexSearcher.setSimilarity(recencySimilarityDecorator);
+        TopDocs results2 = indexSearcher.search(query.build(), 10);
+
+        assertTrue(results1.scoreDocs[0].score < results2.scoreDocs[0].score);
     }
 
-    /** make sure we can retrieve when norms are disabled */
-    public void testNoNorms() throws Exception {
-        Directory dir = newDirectory();
-        RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
-        Document doc = new Document();
-        FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
-        ft.setOmitNorms(true);
-        ft.freeze();
-        doc.add(newField("foo", "bar", ft));
-        iw.addDocument(doc);
-        IndexReader ir = iw.getReader();
-        iw.close();
-        IndexSearcher is = newSearcher(ir);
 
-        for (Similarity sim : sims) {
-            is.setSimilarity(sim);
-            BooleanQuery.Builder query = new BooleanQuery.Builder();
-            query.setDisableCoord(true);
-            query.add(new TermQuery(new Term("foo", "bar")), BooleanClause.Occur.SHOULD);
-            assertEquals(1, is.search(query.build(), 10).totalHits);
-        }
-        ir.close();
-        dir.close();
+    public Long createTermRecencyPayload(int recencyInHours) {
+        Instant termTimestamp = Instant.now().minus(recencyInHours, ChronoUnit.HOURS);
+        return Duration.between(RecencySimilarityDecorator.RecencyEpoch, termTimestamp).toHours();
     }
 
-    /** make sure scores are not skewed by docs not containing the field */
-    public void testNoFieldSkew() throws Exception {
-        Directory dir = newDirectory();
-        // an evil merge policy could reorder our docs for no reason
-        IndexWriterConfig iwConfig = newIndexWriterConfig().setMergePolicy(newLogMergePolicy());
-        RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwConfig);
-        Document doc = new Document();
-        doc.add(newTextField("foo", "bar baz somethingelse", Field.Store.NO));
-        iw.addDocument(doc);
-        IndexReader ir = iw.getReader();
-        IndexSearcher is = newSearcher(ir);
-
-        BooleanQuery.Builder queryBuilder = new BooleanQuery.Builder();
-        queryBuilder.add(new TermQuery(new Term("foo", "bar")), BooleanClause.Occur.SHOULD);
-        queryBuilder.add(new TermQuery(new Term("foo", "baz")), BooleanClause.Occur.SHOULD);
-        Query query = queryBuilder.build();
-
-        // collect scores
-        List<Explanation> scores = new ArrayList<>();
-        for (Similarity sim : sims) {
-            is.setSimilarity(sim);
-            scores.add(is.explain(query, 0));
-        }
-        ir.close();
-
-        // add some additional docs without the field
-        int numExtraDocs = TestUtil.nextInt(random(), 1, 1000);
-        for (int i = 0; i < numExtraDocs; i++) {
-            iw.addDocument(new Document());
-        }
-
-        // check scores are the same
-        ir = iw.getReader();
-        is = newSearcher(ir);
-        for (int i = 0; i < sims.size(); i++) {
-            is.setSimilarity(sims.get(i));
-            Explanation expected = scores.get(i);
-            Explanation actual = is.explain(query, 0);
-            assertEquals(sims.get(i).toString() + ": actual=" + actual + ",expected=" + expected,
-                    expected.getValue(), actual.getValue(), 0F);
-        }
-
-        iw.close();
-        ir.close();
-        dir.close();
-    }
-
-    /** make sure all sims work if TF is omitted */
-    public void testOmitTF() throws Exception {
-        Directory dir = newDirectory();
-        RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
-        Document doc = new Document();
-        FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
-        ft.setIndexOptions(IndexOptions.DOCS);
-        ft.freeze();
-        Field f = newField("foo", "bar", ft);
-        doc.add(f);
-        iw.addDocument(doc);
-        IndexReader ir = iw.getReader();
-        iw.close();
-        IndexSearcher is = newSearcher(ir);
-
-        for (Similarity sim : sims) {
-            is.setSimilarity(sim);
-            BooleanQuery.Builder query = new BooleanQuery.Builder();
-            query.setDisableCoord(true);
-            query.add(new TermQuery(new Term("foo", "bar")), BooleanClause.Occur.SHOULD);
-            assertEquals(1, is.search(query.build(), 10).totalHits);
-        }
-        ir.close();
-        dir.close();
-    }
-
-    /** make sure all sims work if TF and norms is omitted */
-    public void testOmitTFAndNorms() throws Exception {
-        Directory dir = newDirectory();
-        RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
-        Document doc = new Document();
-        FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
-        ft.setIndexOptions(IndexOptions.DOCS);
-        ft.setOmitNorms(true);
-        ft.freeze();
-        Field f = newField("foo", "bar", ft);
-        doc.add(f);
-        iw.addDocument(doc);
-        IndexReader ir = iw.getReader();
-        iw.close();
-        IndexSearcher is = newSearcher(ir);
-
-        for (Similarity sim : sims) {
-            is.setSimilarity(sim);
-            BooleanQuery.Builder query = new BooleanQuery.Builder();
-            query.setDisableCoord(true);
-            query.add(new TermQuery(new Term("foo", "bar")), BooleanClause.Occur.SHOULD);
-            assertEquals(1, is.search(query.build(), 10).totalHits);
-        }
-        ir.close();
-        dir.close();
-    }
-
-    /** make sure all sims work with spanOR(termX, termY) where termY does not exist */
-    public void testCrazySpans() throws Exception {
-        // The problem: "normal" lucene queries create scorers, returning null if terms dont exist
-        // This means they never score a term that does not exist.
-        // however with spans, there is only one scorer for the whole hierarchy:
-        // inner queries are not real queries, their boosts are ignored, etc.
-        Directory dir = newDirectory();
-        RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
-        Document doc = new Document();
-        FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
-        doc.add(newField("foo", "bar", ft));
-        iw.addDocument(doc);
-        IndexReader ir = iw.getReader();
-        iw.close();
-        IndexSearcher is = newSearcher(ir);
-
-        for (Similarity sim : sims) {
-            is.setSimilarity(sim);
-            SpanTermQuery s1 = new SpanTermQuery(new Term("foo", "bar"));
-            SpanTermQuery s2 = new SpanTermQuery(new Term("foo", "baz"));
-            Query query = new SpanOrQuery(s1, s2);
-            TopDocs td = is.search(query, 10);
-            assertEquals(1, td.totalHits);
-            float score = td.scoreDocs[0].score;
-            assertFalse("negative score for " + sim, score < 0.0f);
-            assertFalse("inf score for " + sim, Float.isInfinite(score));
-            assertFalse("nan score for " + sim, Float.isNaN(score));
-        }
-        ir.close();
-        dir.close();
-    }
 }
-
-
-

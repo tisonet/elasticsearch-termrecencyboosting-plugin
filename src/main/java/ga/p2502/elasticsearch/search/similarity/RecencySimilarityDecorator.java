@@ -41,7 +41,7 @@ import static java.util.Arrays.asList;
 
 
 public class RecencySimilarityDecorator extends Similarity {
-    private static final Instant RecencyEpoch = Instant.parse("2018-01-01T00:00:00.00Z");
+    public static final Instant RecencyEpoch = Instant.parse("2018-01-01T00:00:00.00Z");
 
     private final Settings settings;
     private final Similarity decoratedSimilarity;
