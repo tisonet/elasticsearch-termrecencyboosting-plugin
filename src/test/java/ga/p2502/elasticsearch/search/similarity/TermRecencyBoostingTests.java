@@ -35,9 +35,9 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 
-public class RecencySimilarityDecoratorTests extends LuceneTestCase {
+public class TermRecencyBoostingTests extends LuceneTestCase {
     private Similarity decoratedSimilarity;
-    private Similarity recencySimilarityDecorator;
+    private Similarity termRecencyBoosting;
     private Directory directory;
     private IndexReader indexReader;
     private IndexSearcher indexSearcher;
@@ -47,15 +47,15 @@ public class RecencySimilarityDecoratorTests extends LuceneTestCase {
     public void setUp() throws Exception {
         super.setUp();
         this.decoratedSimilarity = new BM25Similarity();
-        this.recencySimilarityDecorator = new RecencySimilarityDecorator(null, decoratedSimilarity);
+        this.termRecencyBoosting = new TermRecencyBoosting(decoratedSimilarity);
 
         directory = newDirectory();
         try (IndexWriter indexWriter = new IndexWriter(directory, newIndexWriterConfig(RecencyPayloadAnalyzerFactory.create()))) {
             Document document = new Document();
             document.add(new TextFieldWithPayload("web_kw", "auto motto", Field.Store.YES));
             document.add(new TextFieldWithPayload("web_kw",
-                    "java|" + createTermRecencyPayload(1)
-                            + " python|"+ createTermRecencyPayload(24) , Field.Store.YES));
+                    "java|" + createTermTimestamp(1)
+                            + " python|"+ createTermTimestamp(24) , Field.Store.YES));
 
 
             indexWriter.addDocument(document);
@@ -79,7 +79,7 @@ public class RecencySimilarityDecoratorTests extends LuceneTestCase {
         indexSearcher.setSimilarity(decoratedSimilarity);
         TopDocs results1 = indexSearcher.search(query.build(), 10);
 
-        indexSearcher.setSimilarity(recencySimilarityDecorator);
+        indexSearcher.setSimilarity(termRecencyBoosting);
         TopDocs results2 = indexSearcher.search(query.build(), 10);
 
         assertEquals(results1.scoreDocs[0].score, results2.scoreDocs[0].score, 0);
@@ -93,16 +93,16 @@ public class RecencySimilarityDecoratorTests extends LuceneTestCase {
         indexSearcher.setSimilarity(decoratedSimilarity);
         TopDocs results1 = indexSearcher.search(query.build(), 10);
 
-        indexSearcher.setSimilarity(recencySimilarityDecorator);
+        indexSearcher.setSimilarity(termRecencyBoosting);
         TopDocs results2 = indexSearcher.search(query.build(), 10);
 
         assertTrue(results1.scoreDocs[0].score < results2.scoreDocs[0].score);
     }
 
 
-    public Long createTermRecencyPayload(int recencyInHours) {
+    public Long createTermTimestamp(int recencyInHours) {
         Instant termTimestamp = Instant.now().minus(recencyInHours, ChronoUnit.HOURS);
-        return Duration.between(RecencySimilarityDecorator.RecencyEpoch, termTimestamp).toHours();
+        return termTimestamp.getEpochSecond() / 3600;
     }
 
 }

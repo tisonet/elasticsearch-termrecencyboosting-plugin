@@ -15,12 +15,12 @@
 
 package ga.p2502.elasticsearch.plugin;
 
-import ga.p2502.elasticsearch.search.similarity.RecencySimilarityProvider;
+import ga.p2502.elasticsearch.search.similarity.BM25SimilarityWithTermRecencyBoosting;
 import org.elasticsearch.index.IndexModule;
 import org.elasticsearch.plugins.Plugin;
 
-public class RecencySimilarityPlugin extends Plugin {
+public class BM25SimilarityWithTermRecencyBoostingPlugin extends Plugin {
     public void onIndexModule(IndexModule indexModule) {
-        indexModule.addSimilarity("recency-similarity", RecencySimilarityProvider::new);
+        indexModule.addSimilarity("BM25-recency", BM25SimilarityWithTermRecencyBoosting::new);
     }
 }

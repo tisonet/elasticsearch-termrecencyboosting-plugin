@@ -55,8 +55,8 @@ public class SimilarityTests extends LuceneTestCase {
     public void setUp() throws Exception {
         super.setUp();
         sims = new ArrayList<>();
-        sims.add(new RecencySimilarityDecorator(null, new ClassicSimilarity()));
-        sims.add(new RecencySimilarityDecorator(null, new BM25Similarity()));
+        sims.add(new TermRecencyBoosting(new ClassicSimilarity()));
+        sims.add(new TermRecencyBoosting(new BM25Similarity()));
     }
 
     /** because of stupid things like querynorm, it's possible we computeStats on a field that doesnt exist at all
