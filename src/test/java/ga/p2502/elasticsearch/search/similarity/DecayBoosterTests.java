@@ -16,7 +16,6 @@
 package ga.p2502.elasticsearch.search.similarity;
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.junit.Assert;
 
 public class DecayBoosterTests extends LuceneTestCase {
 
