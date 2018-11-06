@@ -6,7 +6,6 @@ stages:
   - build
   - test
   - build_uber
-  - build_docker
   - deploy
 
 before_script:
@@ -26,7 +25,7 @@ build:
     - ./gradlew assemble
   artifacts:
     paths:
-      - build/libs/*.jar
+      - build/distributions/*.zip
 
 unit_test:
   image: java:8-jdk
@@ -34,40 +33,5 @@ unit_test:
   script:
     - ./gradlew check
 
-build_uber:
-  only:
-      - tags
-  image: java:8-jdk
-  stage: build_uber
-  script:
-      - ./gradlew shadowJar
-  artifacts:
-    paths:
-        - build/libs/*.jar
-    expire_in: 1 week
 
-
-build_docker_images:
-    only:
-        - tags
-    image: docker:latest
-    stage: build_docker
-    script:
-        - docker login -u gitlab-ci-token -p $CI_BUILD_TOKEN git.cognito.cz:5000
-        - docker info
-        - (cd docker && ./rebuild.sh -t "$RELEASE_TAG" -T "$CI_BUILD_REF")
-    dependencies:
-        - build_uber
-
-
-push_docker_images:
-    only:
-        - tags
-    image: docker:latest
-    stage: deploy
-    script:
-        - docker login -u gitlab-ci-token -p $CI_BUILD_TOKEN git.cognito.cz:5000
-        - docker push "${BACKEND_IMAGE_GITLAB}:${CI_BUILD_REF}"
-        - docker push "${BACKEND_IMAGE_GITLAB}:${RELEASE_TAG}"
-    dependencies: []
 

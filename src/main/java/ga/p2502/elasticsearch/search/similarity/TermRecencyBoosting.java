@@ -38,7 +38,6 @@ import java.util.List;
 
 
 public class TermRecencyBoosting extends Similarity {
-    private static int SECONDS_IN_HOUR =  60 * 60;
     static String DEFAULT_DECAY_FUNCTION = "linear";
     
     // 24 hours from now (scale) term relevance decreases to half 0.5 (decay)
@@ -175,7 +174,7 @@ public class TermRecencyBoosting extends Similarity {
             int termTimestamp = getLatestTermTimestamp(doc);
 
             if (termTimestamp != DEFAULT_TERM_TIMESTAMP) {
-                return calculateRecency(Instant.now(), termTimestamp);
+                return RecencyCalculator.calculateRecency(termTimestamp);
             }
 
             return -1;
@@ -191,6 +190,7 @@ public class TermRecencyBoosting extends Similarity {
 
             return latestPayload;
         }
+
         private int readTermTimestampFromPayload(int doc, BytesRef term) {
             try {
                 Terms terms = context.reader().getTermVector(doc, recencyStats.field);
@@ -218,11 +218,5 @@ public class TermRecencyBoosting extends Similarity {
                 return DEFAULT_TERM_TIMESTAMP;
             }
         }
-
-    }
-
-    private long calculateRecency(Instant now, int termTimestamp) {
-        Instant termInstant = Instant.ofEpochSecond(termTimestamp * SECONDS_IN_HOUR);
-        return Duration.between(termInstant, now).toHours();
     }
 }

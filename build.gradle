@@ -38,7 +38,7 @@ version = rootProject.file('VERSION.txt').text.trim()
 
 esplugin {
     description 'Elasticsearch scoring plugin extends BM25 similarity scoring by boosting more recent terms'
-    classname 'ga.p2502.elasticsearch.plugin.RecencySimilarityPlugin'
+    classname 'ga.p2502.elasticsearch.plugin.BM25SimilarityWithTermRecencyBoostingPlugin'
     name project.name
     version project.version
     licenseFile rootProject.file('LICENSE.txt')

@@ -1,0 +1,25 @@
+version: '2'
+services:
+
+  elasticsearch:
+    build: ./elasticsearch
+    hostname: elasticsearch
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    environment:
+          - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ulimits:
+      nproc: 65535
+      memlock:
+        soft: -1
+        hard: -1
+
+  kibana:
+    image: "docker.elastic.co/kibana/kibana:5.6.10"
+    hostname: kibana
+    links:
+      - elasticsearch
+    ports:
+      - "5601:5601"
+

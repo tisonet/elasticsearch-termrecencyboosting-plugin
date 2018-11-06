@@ -13,17 +13,21 @@
  */
 
 
-package ga.p2502.elasticsearch.plugin;
+package ga.p2502.elasticsearch.search.similarity;
 
-import ga.p2502.elasticsearch.search.similarity.BM25SimilarityWithTermRecencyBoosting;
-import org.elasticsearch.index.IndexModule;
-import org.elasticsearch.plugins.Plugin;
+import org.junit.Assert;
+import org.junit.Test;
 
-public class BM25SimilarityWithTermRecencyBoostingPlugin extends Plugin {
-    public String name() {
-        return "BM25-recency";
-    }
-    public void onIndexModule(IndexModule indexModule) {
-        indexModule.addSimilarity("BM25-recency", BM25SimilarityWithTermRecencyBoosting::new);
+import java.time.Instant;
+
+public class RecencyCalculatorTests extends Assert {
+
+    @Test
+    public void testCalculateRecency() throws Exception {
+        Instant now = Instant.parse("2018-11-06T12:00:00.000Z");
+
+        assertEquals(RecencyCalculator.calculateRecency(now, 428196), 0);
+        assertEquals(RecencyCalculator.calculateRecency(now, 428195), 1);
+        assertEquals(RecencyCalculator.calculateRecency(now, 428180), 16);
     }
 }
