@@ -17,10 +17,13 @@ Plugin zip file is then located in build/distributions folder
 
 ## Plugin settings
 
-**decay_function** - Decay functions score a term recency with a function that decays depending on the distance of current time. We have _exp_, _linear_ and _gauss_.
-**scale** - Defines the distance from now at which the computed score will equal decay parameter.
-**decay** - The decay parameter defines how terms are scored at the distance given at scale.
-**weight** - The recency score booster.            
+**decay_function** - Decay functions score a term recency with a function that decays depending on the distance of current time. We have _exp_, _linear_ and _gauss_. Default linear.
+
+**scale** - Defines the number of hours from now at which the computed score will equal decay parameter. Default 24.
+
+**decay** - The decay parameter defines how terms are scored at the distance given at scale. Default 0.5.
+
+**weight** - The recency score booster to enhance recency weight. Default 1.0.             
 
 More about decay functions can be found on Elasticsearch page https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-function-score-query.html#function-decay
 
