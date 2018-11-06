@@ -15,12 +15,11 @@
 
 package ga.p2502.elasticsearch.search.similarity;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Assert;
-import org.junit.Test;
 
-public class DecayBoosterTests extends Assert {
+public class DecayBoosterTests extends LuceneTestCase {
 
-    @Test
     public void testLinearBoosting() throws Exception {
         DecayBooster booster = new DecayBooster("linear", 24, 0.5, 1);
 
@@ -31,7 +30,6 @@ public class DecayBoosterTests extends Assert {
         assertEquals(booster.getBoost(72), 0, 0);
     }
 
-    @Test
     public void testLinearBoostingWithWeight() throws Exception {
         DecayBooster booster = new DecayBooster("linear", 24, 0.5, 10);
 
@@ -42,7 +40,6 @@ public class DecayBoosterTests extends Assert {
         assertEquals(booster.getBoost(72), 0, 0);
     }
 
-    @Test
     public void testExpBoosting() throws Exception {
         DecayBooster booster = new DecayBooster("exp", 24, 0.5, 1);
 
@@ -53,7 +50,6 @@ public class DecayBoosterTests extends Assert {
         assertEquals(booster.getBoost(72), 0.125, 0);
     }
 
-    @Test
     public void testGaussBoosting() throws Exception {
         DecayBooster booster = new DecayBooster("gauss", 24, 0.5, 1);
 

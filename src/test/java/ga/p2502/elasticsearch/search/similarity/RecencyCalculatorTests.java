@@ -15,14 +15,13 @@
 
 package ga.p2502.elasticsearch.search.similarity;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Assert;
-import org.junit.Test;
 
 import java.time.Instant;
 
-public class RecencyCalculatorTests extends Assert {
+public class RecencyCalculatorTests extends LuceneTestCase {
 
-    @Test
     public void testCalculateRecency() throws Exception {
         Instant now = Instant.parse("2018-11-06T12:00:00.000Z");
 

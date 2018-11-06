@@ -150,10 +150,12 @@ public class TermRecencyBoosting extends Similarity {
             recencyScoreSubs.add(Explanation.match((float)getTermRecency(doc), "termRecency"));
             if (termRecency >= 0) {
                 float termRecencyBoost = recencyBooster.getBoost(termRecency);
-                recencyScoreSubs.add(Explanation.match(termRecencyBoost, "termRecencyBoost", recencyBooster.explain(termRecency)));
+                recencyScoreSubs.add(Explanation.match(termRecencyBoost, "termRecencyBoost",
+                        recencyBooster.explain(termRecency)));
             }
 
-            Explanation recencyExp = Explanation.match(scoreRecency(doc),"recencyScore, computed as 1.0 + termRecencyBoost from:", recencyScoreSubs);
+            Explanation recencyExp = Explanation.match(scoreRecency(doc),
+                    "recencyScore, computed as 1.0 + termRecencyBoost from:", recencyScoreSubs);
             subs.add(recencyExp);
 
             return Explanation.match(bootsScore,"score(doc="+doc+",freq="+freq+"), product of:", subs);
