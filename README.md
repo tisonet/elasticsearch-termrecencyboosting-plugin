@@ -1,6 +1,6 @@
 # Elasticsearch term recency boosting similarity plugin
 
-Elasticsearch custom similarity plugin to calculate score based on TF * IDF  and term recency. So that terms with the most recent timestamp have higher scores.
+Elasticsearch custom similarity plugin to calculate score based on TF * IDF  and term recency. Plugin causes that terms with more recent timestamp have higher score.
 Similarity uses Elasticsearch TF * IDF (BM25) similarity and multiply given score with term recency score.   
 
 Plugin is inspired by https://github.com/sdauletau/elasticsearch-position-similarity 
