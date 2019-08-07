@@ -13,7 +13,7 @@
  */
 
 
-package ga.p2502.elasticsearch.search.similarity;
+package tisonet.elasticsearch.termrecencyboosting.search.similarity;
 
 import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.search.similarities.Similarity;

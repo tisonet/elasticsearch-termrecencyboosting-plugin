@@ -13,7 +13,7 @@
  */
 
 
-package ga.p2502.elasticsearch.search.similarity;
+package tisonet.elasticsearch.termrecencyboosting.search.similarity;
 
 import org.apache.lucene.search.Explanation;
 import org.elasticsearch.index.query.functionscore.DecayFunction;

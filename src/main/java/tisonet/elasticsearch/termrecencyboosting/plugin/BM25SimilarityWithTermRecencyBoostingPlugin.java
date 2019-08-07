@@ -13,9 +13,9 @@
  */
 
 
-package ga.p2502.elasticsearch.plugin;
+package tisonet.elasticsearch.termrecencyboosting.plugin;
 
-import ga.p2502.elasticsearch.search.similarity.BM25SimilarityWithTermRecencyBoosting;
+import tisonet.elasticsearch.termrecencyboosting.search.similarity.BM25SimilarityWithTermRecencyBoosting;
 import org.elasticsearch.index.IndexModule;
 import org.elasticsearch.plugins.Plugin;
 

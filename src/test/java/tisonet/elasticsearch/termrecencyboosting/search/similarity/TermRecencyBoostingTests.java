@@ -12,9 +12,9 @@
  * limitations under the License.
  */
 
-package ga.p2502.elasticsearch.search.similarity;
+package tisonet.elasticsearch.termrecencyboosting.search.similarity;
 
-import ga.p2502.elasticsearch.index.analysis.RecencyPayloadAnalyzerFactory;
+import tisonet.elasticsearch.termrecencyboosting.index.analysis.RecencyPayloadAnalyzerFactory;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import org.apache.lucene.document.Document;

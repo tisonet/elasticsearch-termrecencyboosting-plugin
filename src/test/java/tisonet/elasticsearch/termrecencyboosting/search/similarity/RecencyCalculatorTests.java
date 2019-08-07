@@ -11,22 +11,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package ga.p2502.elasticsearch.search.similarity;
 
-import java.time.Duration;
+
+package tisonet.elasticsearch.termrecencyboosting.search.similarity;
+
+import org.apache.lucene.util.LuceneTestCase;
+
 import java.time.Instant;
 
-class RecencyCalculator {
+public class RecencyCalculatorTests extends LuceneTestCase {
 
-    private static int SECONDS_IN_HOUR =  60 * 60;
+    public void testCalculateRecency() throws Exception {
+        Instant now = Instant.parse("2018-11-06T12:00:00.000Z");
 
-    static long calculateRecency(Instant now, int timestampInHours) {
-        Instant termInstant = Instant.ofEpochSecond(timestampInHours * SECONDS_IN_HOUR);
-        return Duration.between(termInstant, now).toHours();
+        assertEquals(RecencyCalculator.calculateRecency(now, 428196), 0);
+        assertEquals(RecencyCalculator.calculateRecency(now, 428195), 1);
+        assertEquals(RecencyCalculator.calculateRecency(now, 428180), 16);
     }
-
-    static long calculateRecency(int timestampInHours) {
-        return calculateRecency(Instant.now(), timestampInHours);
-    }
-
 }

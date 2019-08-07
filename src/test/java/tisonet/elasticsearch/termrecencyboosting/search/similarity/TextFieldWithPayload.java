@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-package ga.p2502.elasticsearch.search.similarity;
+package tisonet.elasticsearch.termrecencyboosting.search.similarity;
 
 import java.io.Reader;
 import org.apache.lucene.analysis.TokenStream;

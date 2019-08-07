@@ -1,6 +1,6 @@
 
 variables:
-    BACKEND_IMAGE_GITLAB: git.cognito.cz:5000/gauss/ga-2502-elasticsearch-plugins
+    BACKEND_IMAGE_GITLAB: git.cognito.cz:5000/gauss/tisonet-elasticsearch-termrecencyboosting-plugin
 
 stages:
   - build

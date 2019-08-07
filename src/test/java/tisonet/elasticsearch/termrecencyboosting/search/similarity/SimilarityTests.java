@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package ga.p2502.elasticsearch.search.similarity;
+package tisonet.elasticsearch.termrecencyboosting.search.similarity;
 
 import java.util.ArrayList;
 import java.util.List;

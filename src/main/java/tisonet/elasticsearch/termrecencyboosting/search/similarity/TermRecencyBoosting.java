@@ -13,7 +13,7 @@
  */
 
 
-package ga.p2502.elasticsearch.search.similarity;
+package tisonet.elasticsearch.termrecencyboosting.search.similarity;
 
 import org.apache.logging.log4j.Logger;
 import org.apache.lucene.analysis.payloads.PayloadHelper;
@@ -31,8 +31,6 @@ import org.apache.lucene.util.SmallFloat;
 import org.elasticsearch.common.logging.Loggers;
 
 import java.io.IOException;
-import java.time.Duration;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 

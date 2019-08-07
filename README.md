@@ -13,7 +13,7 @@ Plugin zip file is then located in build/distributions folder
 
 
 ## Install / Remove plugin from Elasticsearch
-    elasticsearch-plugin install file:////ga-2502-elasticsearch-plugins-5.6.10.zip
+    elasticsearch-plugin install file:////tisonet-elasticsearch-termrecencyboosting-plugin-5.6.10.zip
     elasticsearch-plugin remove BM25-recency
 
 

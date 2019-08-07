@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-package ga.p2502.elasticsearch.index.analysis;
+package tisonet.elasticsearch.termrecencyboosting.index.analysis;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.standard.StandardFilter;
