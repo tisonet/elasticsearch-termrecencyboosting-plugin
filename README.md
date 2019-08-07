@@ -30,6 +30,17 @@ Plugin zip file is then located in build/distributions folder
 More about decay functions can be found on Elasticsearch page https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-function-score-query.html#function-decay
 
 
+## Run in Docker 
+```bash
+cd docker
+./rebuild.sh
+docker-compose up
+```
+
+Open Kibana in web browser: http://localhost:5601/app/kibana 
+Login: elastic:changeme 
+
+
 ## Create index
 ```
 PUT /test_index
